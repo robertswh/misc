@@ -4,8 +4,11 @@ Created on Mon Sep 25 16:54:19 2017
 
 @author: roberw
 """
-import scipy as sp
+
+import numpy as np
+import pandas as pd
 import matplotlib.pylab as plt
+import time as tm
 
 
 #Area of a circle is pi*r**2
@@ -17,28 +20,50 @@ import matplotlib.pylab as plt
 #pi = n/(N*r^2)
 
 
-def dot(n):
-    #random sample
-    x = sp.rand() - 0.5
-    y = sp.rand() - 0.5
-    
-    r = sp.sqrt(x*x+y*y)
-    if r <= 0.5:
-        n +=1
-        return x, y, n
-    else:
-        return 0, 0, n
+def create_random_coordinates(n_points):
+    x = np.random.rand(n_points) - 0.5
+    y = np.random.rand(n_points) - 0.5
+    df = pd.DataFrame({'x_coordinate':x,
+                       'y_coordinate':y})
+    return df
 
-N = int(1e4)
-n=0
-x_c = []
-y_c = []
 
-for i in range(N):
-    x, y, n = dot(n)
-    x_c.append(x)
-    y_c.append(y)
+def get_distance_from_origin(df):
+    df['dist_origin'] = np.sqrt(df['x_coordinate']**2 +\
+                                df['y_coordinate']**2)
+    return df
 
-plt.plot(x_c,y_c,'o')
 
-print('The value of pi using %d random samples is %.5f'%(N, n/(N*0.5**2)))
+def add_circle_flag(df):
+    df['within_circle'] = np.where(df['dist_origin']<=0.5, 1, 0)
+    return df
+
+
+def plot_coordinates(df):
+    plt.clf()
+    df_circle = df[df['within_circle'] == 1]
+    df_not_circle = df[df['within_circle'] == 0]
+    plt.plot(df_circle['x_coordinate'], df_circle['y_coordinate'], 'ro')
+    plt.plot(df_not_circle['x_coordinate'], df_not_circle['y_coordinate'], 'bo')
+    plt.xlim(-0.5,0.5)
+    plt.ylim(-0.5,0.5)
+    my_pi = len(df_circle) / (len(df)*0.5**2)
+    result = 'No of point: %d\npi = %.3f'%(len(df), my_pi)
+    plt.annotate(s=result, xy=(0,0))
+
+def create_data_and_plot(n_points):
+    df = create_random_coordinates(n_points)
+    df = get_distance_from_origin(df)
+    df = add_circle_flag(df)
+    plot_coordinates(df)
+
+n_list = np.array([10,100,1000,10000])
+for n in n_list:
+    plt.figure()
+    create_data_and_plot(n)
+
+#not used in loop
+def calculate_pi(df):
+    return np.sum(df['within_circle']) / (len(df) * 0.5**2)
+
+monte_pi = calculate_pi(df)
